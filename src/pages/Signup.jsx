@@ -1,47 +1,64 @@
-import { useState } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+// src/pages/Signup.jsx
+import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 const Signup = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { setToken } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleSignup = async (e) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
+
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/signup`, {
-        email,
-        password
+      const res = await fetch('https://carbuykaro-backend.onrender.com/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
-      alert("Account created. Please log in.");
-      navigate("/login");
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Signup failed');
+
+      setToken(data.token);
+      localStorage.setItem('token', data.token);
+      navigate('/');
     } catch (err) {
-      alert("Signup failed");
+      setError(err.message);
     }
   };
 
   return (
-    <div className="container">
+    <div className="container mt-5">
       <h2>Signup</h2>
-      <form onSubmit={handleSignup} className="w-50 mx-auto">
-        <input
-          type="email"
-          className="form-control mb-3"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          className="form-control mb-3"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit" className="btn btn-success w-100">Signup</button>
+      <form onSubmit={handleSubmit} className="w-50">
+        <div className="form-group mb-3">
+          <label>Name</label>
+          <input type="text" className="form-control" name="name" onChange={handleChange} required />
+        </div>
+        <div className="form-group mb-3">
+          <label>Email</label>
+          <input type="email" className="form-control" name="email" onChange={handleChange} required />
+        </div>
+        <div className="form-group mb-3">
+          <label>Password</label>
+          <input type="password" className="form-control" name="password" onChange={handleChange} required />
+        </div>
+        {error && <div className="alert alert-danger">{error}</div>}
+        <button type="submit" className="btn btn-primary">Signup</button>
       </form>
     </div>
   );
